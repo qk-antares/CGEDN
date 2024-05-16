@@ -1,0 +1,41 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Compare Main Debug",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/experiments/compare/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/experiments/compare",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Ablation Main Debug",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/experiments/ablation/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/experiments/ablation",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Common Debug",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${fileDirname}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+    ]
+}
