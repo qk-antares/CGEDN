@@ -164,5 +164,5 @@ def best_k_evaluation():
 if __name__ == "__main__":
     # ablation_on_bias()
     # ablation_on_multi_view_matching()
-    ablation_on_inter_gconv()
-    # default_model_train()
+    # ablation_on_inter_gconv()
+    default_model_train()
