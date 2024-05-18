@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from experiments.compare.model.cgedn.AttentionPooling import AttentionPooling
-from experiments.compare.model.cgedn.CrsGConv import CrsGConv
-from experiments.compare.model.cgedn.MultiLayerMatrix import MultiLayerMatrix
+from experiments.compare.model.cgedn.InterGConv import InterGConv
+from experiments.compare.model.cgedn.MultiViewMatchingModule import MultiViewMatchingModule
 from experiments.compare.model.common.TensorNetworkModule import TensorNetworkModule
 
 
@@ -17,7 +17,7 @@ class CGEDN(nn.Module):
         self.setup_layers()
 
     def setup_layers(self):
-        # 节点嵌入模块的CrsGConv
+        # 节点嵌入模块的InterGConv
         filters = self.args.gnn_filters.split("-")
         self.gnn_layers = len(filters)
         gnn_filters = [int(n_filter) for n_filter in filters]
@@ -34,10 +34,10 @@ class CGEDN(nn.Module):
         ]
 
         for i in range(0, self.gnn_layers):
-            setattr(self, "gnn{}".format(i + 1), CrsGConv(**gnn_settings[i]))
+            setattr(self, "gnn{}".format(i + 1), InterGConv(**gnn_settings[i]))
 
-        self.mapping_matrix = MultiLayerMatrix(args=self.args, filters=gnn_filters[1:])
-        self.cost_matrix = MultiLayerMatrix(args=self.args, filters=gnn_filters[1:])
+        self.mapping_matrix = MultiViewMatchingModule(args=self.args, filters=gnn_filters[1:])
+        self.cost_matrix = MultiViewMatchingModule(args=self.args, filters=gnn_filters[1:])
 
         # bias
         self.attention = AttentionPooling(gnn_filters[-1])
@@ -55,17 +55,17 @@ class CGEDN(nn.Module):
         for i in range(mlp_layers - 1):
             layers.extend([nn.Linear(reg_neurons[i], reg_neurons[i + 1]), nn.ReLU()])
         # 最后一层
-        layers.extend([nn.Linear(reg_neurons[-1], 1)])
+        layers.extend([nn.Linear(reg_neurons[-1], 1), nn.ReLU()])
         self.score_reg = nn.Sequential(*layers)
 
-    def forward_crs_gconv_layers(
+    def forward_inter_gconv_layers(
         self, emb1, edge_index1, edge_attr1, emb2, edge_index2, edge_attr2
     ):
         embs1 = []
         embs2 = []
         for i in range(1, self.gnn_layers + 1):
-            crs_gconv = getattr(self, "gnn{}".format(i))
-            emb1, emb2 = crs_gconv(
+            inter_gconv = getattr(self, "gnn{}".format(i))
+            emb1, emb2 = inter_gconv(
                 emb1, edge_index1, edge_attr1, emb2, edge_index2, edge_attr2
             )
             embs1.append(emb1)
@@ -89,23 +89,29 @@ class CGEDN(nn.Module):
             data["edge_index2"],
             data["edge_attr2"],
         )
-        embs1, embs2 = self.forward_crs_gconv_layers(
+        embs1, embs2 = self.forward_inter_gconv_layers(
             emb1, edge_index1, edge_attr1, emb2, edge_index2, edge_attr2
         )
 
         mapping_matrix = self.mapping_matrix(embs1, embs2)
         mapping_matrix = F.softmax(mapping_matrix, dim=1)
         cost_matrix = self.cost_matrix(embs1, embs2)
+        cost_matrix = F.relu(cost_matrix)
 
         soft_matrix = mapping_matrix * cost_matrix
         bias_value = self.get_bias_value(embs1[-1], embs2[-1])
-        score = torch.sigmoid(soft_matrix.sum() + bias_value)
 
-        if self.args.target_mode == "exp":
-            pre_ged = -torch.log(score) * data["avg_v"]
-        elif self.args.target_mode == "linear":
-            pre_ged = score * data["hb"]
-        else:
-            assert False
+        pre_ged = soft_matrix.sum() + bias_value
+        pre_sim = torch.exp(-pre_ged / data["avg_v"])
+        return pre_sim, pre_ged.item(), mapping_matrix
 
-        return score, pre_ged.item(), mapping_matrix
+        # score = torch.sigmoid(soft_matrix.sum() + bias_value)
+
+        # if self.args.target_mode == "exp":
+        #     pre_ged = -torch.log(score) * data["avg_v"]
+        # elif self.args.target_mode == "linear":
+        #     pre_ged = score * data["hb"]
+        # else:
+        #     assert False
+
+        # return score, pre_ged.item(), mapping_matrix

@@ -8,7 +8,6 @@ import numpy as np
 from scipy.stats import spearmanr, kendalltau
 from tqdm import tqdm
 from experiments.compare.algorithms.beamsearch.AstarBeam_NodeLabelled import beam_search_NodeLabelled
-from experiments.compare.algorithms.beamsearch.AstarBeam_Unlabelled import beam_search_Unlabelled
 from utils.Dataset import load_all_graphs
 from experiments.compare.algorithms.beamsearch.AstarBeam_NodeEdgeLabelled import beam_search_NodeEdgeLabelled
 from texttable import Texttable
@@ -60,13 +59,6 @@ class AstarBeamEvaluator():
         pk10 = []
         pk20 = []
 
-        if self.dataset == 'AIDS_small':
-           beam_search = beam_search_NodeEdgeLabelled
-        elif self.dataset == 'AIDS_700':
-            beam_search = beam_search_NodeLabelled
-        elif self.dataset in ['IMDB_small', 'Linux']:
-            beam_search = beam_search_Unlabelled
-
         for query_graph in tqdm(self.testing_queries, file=sys.stdout):
             t1 = time.time()
             num += len(self.testing_targets)
@@ -82,7 +74,10 @@ class AstarBeamEvaluator():
                 target_ged = self.ged_dict[(gid1, gid2)][0]
                 target_sim = math.exp(-2*target_ged/(n1+n2))
                 
-                _, pre_ged = beam_search(graph1=query_graph, graph2=target_graph, beamsize=self.beamsize)
+                if self.dataset == 'AIDS_small':
+                    _, pre_ged = beam_search_NodeEdgeLabelled(graph1=query_graph, graph2=target_graph, beamsize=self.beamsize)
+                elif self.dataset == 'AIDS_700':
+                    _, pre_ged = beam_search_NodeLabelled(graph1=query_graph, graph2=target_graph, beamsize=self.beamsize)
                 pre_sim = math.exp(-2*pre_ged/(n1+n2))
 
                 pre.append(pre_ged)
@@ -185,5 +180,5 @@ class AstarBeamEvaluator():
             print(table.draw(), file=f)
 
 
-evaluator = AstarBeamEvaluator(beamsize=100, dataset='IMDB_small')
+evaluator = AstarBeamEvaluator(beamsize=100, dataset='AIDS_700')
 evaluator.evaluate()

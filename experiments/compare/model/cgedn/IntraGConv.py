@@ -4,7 +4,7 @@ from torch import Tensor
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import degree
 
-class IntrGConv(MessagePassing):
+class IntraGConv(MessagePassing):
     """
     :param node_dim: the dimension of input node features
     :param edge_dim: the dimension of input edge features
@@ -19,20 +19,9 @@ class IntrGConv(MessagePassing):
         if args.dataset in ['AIDS_small', 'AIDS_large']:
             self.j_fc = nn.Linear(node_dim + edge_dim, out_dim)
             self.combine = nn.Linear(node_dim + out_dim, out_dim)
-        elif args.dataset in ['AIDS_700', 'Linux']:
+        elif args.dataset in ['AIDS_700', 'Linux', 'IMDB_small', 'IMDB_large']:
             self.j_fc = nn.Linear(node_dim, out_dim)
             self.combine = nn.Linear(node_dim + out_dim, out_dim)
-        elif args.dataset in ['IMDB_small', 'IMDB_large']:
-            self.j_fc = nn.Sequential(
-                nn.Linear(node_dim, out_dim),
-                nn.BatchNorm1d(out_dim, track_running_stats=False),
-                nn.ReLU()
-            )
-            self.combine = nn.Sequential(
-                nn.Linear(node_dim + out_dim, out_dim),
-                nn.BatchNorm1d(out_dim, track_running_stats=False),
-                nn.ReLU()
-            )
 
     def forward(self, x: Tensor, edge_index: Tensor, edge_attr: Tensor) -> Tensor:
         """

@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class MultiLayerMatrix(nn.Module):
+class MultiViewMatchingModule(nn.Module):
     def __init__(self, args, filters):
-        super(MultiLayerMatrix, self).__init__()
+        super(MultiViewMatchingModule, self).__init__()
 
         self.args = args
         self.filters = filters

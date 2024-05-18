@@ -167,7 +167,7 @@ class Trainer(object):
         if self.args.model_name == "CGEDN":
             for graph_pair in batch:
                 n1 = graph_pair["n1"]
-                target = graph_pair["target_sim"]
+                target_sim = graph_pair["target_sim"]
                 mappings = graph_pair["mappings"]
 
                 pre_sim, pre_ged, pre_mapping = self.model(graph_pair)
@@ -176,25 +176,25 @@ class Trainer(object):
                 epsilon = 1e-10
                 losses = (
                     losses
-                    + F.mse_loss(target, pre_sim)
+                    + F.mse_loss(target_sim, pre_sim)
                     - self.args.lamb
                     * torch.max(torch.sum(torch.log10(loss_mapping + epsilon), dim=-1))
                     / n1
                 )
         elif self.args.model_name == "SimGNN":
             for graph_pair in batch:
-                target = graph_pair["target_sim"]
+                target_sim = graph_pair["target_sim"]
                 pre_sim, pre_ged = self.model(graph_pair)
-                losses = losses + F.mse_loss(target, pre_sim)
+                losses = losses + F.mse_loss(target_sim, pre_sim)
         elif self.args.model_name == "GEDGNN":
             weight = self.args.value_loss_weight
             for graph_pair in batch:
-                target, gt_mapping = graph_pair["target_sim"], graph_pair["gt_mapping"]
+                target_sim, gt_mapping = graph_pair["target_sim"], graph_pair["gt_mapping"]
                 pre_sim, pre_ged, mapping = self.model(graph_pair)
                 losses = (
                     losses
                     + fixed_mapping_loss(mapping, gt_mapping)
-                    + weight * F.mse_loss(target, pre_sim)
+                    + weight * F.mse_loss(target_sim, pre_sim)
                 )
         elif self.args.model_name == "TaGSim":
             for graph_pair in batch:

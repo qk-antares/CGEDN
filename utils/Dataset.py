@@ -88,17 +88,20 @@ class Dataset:
         for g in self.graphs:
             edges = g["edges"]
             edge_adj = []
-            for e in edges:
-                adj_row = []
-                for d in edges:
-                    if(e == d):
-                        adj_row.append(0.0)
-                        continue
-                    if((e[0] in d) | (e[1] in d)):
-                        adj_row.append(1.0)
-                    else:
-                        adj_row.append(0.0)
-                edge_adj.append(adj_row)
+            
+            if self.dataset in ['AIDS_small', 'AIDS_large']:
+                for e in edges:
+                    adj_row = []
+                    for d in edges:
+                        if(e == d):
+                            adj_row.append(0.0)
+                            continue
+                        if((e[0] in d) | (e[1] in d)):
+                            adj_row.append(1.0)
+                        else:
+                            adj_row.append(0.0)
+                    edge_adj.append(adj_row)
+
             self.edge_adjs[g["gid"]] = torch.FloatTensor(np.array(edge_adj))
 
             edges = edges + [[y, x] for x, y in edges]
@@ -188,10 +191,30 @@ class Dataset:
         """
         data = dict()
 
-        # 1.get edge index
+        # 1.get edge index, edge_adj, adj
         edges = g["edges"]
+        edge_adj = []
+
+        if self.dataset in ['AIDS_small', 'AIDS_large']:
+            for e in edges:
+                adj_row = []
+                for d in edges:
+                    if(e == d):
+                        adj_row.append(0.0)
+                        continue
+                    if((e[0] in d) | (e[1] in d)):
+                        adj_row.append(1.0)
+                    else:
+                        adj_row.append(0.0)
+                edge_adj.append(adj_row)
+        data["edge_adj"] = torch.FloatTensor(np.array(edge_adj))
+
         edges = edges + [[y, x] for x, y in edges]
-        data["edge_index"] = torch.tensor(edges).t().long().to(self.device)
+        edges = torch.tensor(edges).t().long().to(self.device)
+        data["edge_index"] = edges
+        
+        n = g["n"]
+        data["adj"] = torch.sparse_coo_tensor(edges, torch.ones(edges.shape[1]), (n, n)).to_dense()
 
         # 2.get node feature and edge attr
         if self.dataset in ["Linux", "IMDB_small", "IMDB_large"]:
@@ -215,13 +238,21 @@ class Dataset:
             elif self.dataset in ["AIDS_small", "AIDS_large"]:
                 self.edge_dim = len(self.edge_label_map)
                 m, edge_labels = g["m"], g["edge_labels"]
-                edge_attr = torch.zeros(
-                    2 * m, self.edge_dim, device=self.device
-                )
-                for i, label in enumerate(edge_labels):
-                    index = self.edge_label_map[label]
-                    edge_attr[i][index] = 1
-                    edge_attr[i + m][index] = 1
+                if self.model_name not in ["TaGSim"]:
+                    edge_attr = torch.zeros(
+                        2 * m, self.edge_dim, device=self.device
+                    )
+                    for i, label in enumerate(edge_labels):
+                        index = self.edge_label_map[label]
+                        edge_attr[i][index] = 1
+                        edge_attr[i + m][index] = 1
+                else:
+                    edge_attr = torch.zeros(
+                        m, self.edge_dim, device=self.device
+                    )
+                    for i, label in enumerate(edge_labels):
+                        index = self.edge_label_map[label]
+                        edge_attr[i][index] = 1
                 data["edge_attr"] = edge_attr
         return data
 
@@ -331,6 +362,10 @@ class Dataset:
             "emb2": syn_g2_tensor["emb"],
             "edge_index1": self.edge_indexes[gid1],
             "edge_index2": syn_g2_tensor["edge_index"],
+            "adj1": self.adjs[gid1],
+            "adj2": syn_g2_tensor["adj"],
+            "edge_adj1": self.edge_adjs[gid1],
+            "edge_adj2": syn_g2_tensor["edge_adj"],
             "edge_attr1": self.edge_attrs[gid1],
             "edge_attr2": syn_g2_tensor["edge_attr"],
             "target_ged": gt["target_ged"],
@@ -514,12 +549,9 @@ class Dataset:
         if self.dataset in ['AIDS_700', 'AIDS_small', 'AIDS_large']:
             # 打乱后的节点标签
             syn_g["nodes"] = [nodes[permute[i]] for i in range(0, n2)]
-        elif self.dataset in ['AIDS_small', 'AIDS_large']:
-            # 打乱后的边标签
-            edge_map = dict()
-            for i in range(0, m2):
-                edge_map[edges[i]] = i
-            syn_g["edge_labels"] = [edge_labels[edge_map[edge]] for edge in shuffle_edges]
+        if self.dataset in ['AIDS_small', 'AIDS_large']:
+            # 打乱后的边标签保持不变
+            syn_g["edge_labels"] = edge_labels
 
         gt = dict()
         gt["target_ged"] = nr_num + 2 * ni_num + ed_num + ei_num + er_num
