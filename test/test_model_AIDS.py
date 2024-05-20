@@ -2,7 +2,7 @@ import json
 import time
 import torch
 from experiments.model.cgedn.CGEDN import CGEDN
-from utils.kbest_matching_with_lb import KBestMSolver
+from utils.KBestResolver_CGEDN import KBestMSolver_CGEDN
 from utils.parameter_parser import get_parser
 import dgl
 import numpy as np
@@ -109,7 +109,7 @@ g2.edata["f"] = graph_pair["edge_attr2"]
 
 t1 = time.time()
 
-solver = KBestMSolver(pre_mapping, g1, g2)
+solver = KBestMSolver_CGEDN(pre_mapping, g1, g2)
 solver.get_matching(100)
 min_res = solver.min_ged
 best_matching = solver.best_matching()

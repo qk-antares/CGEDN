@@ -110,31 +110,6 @@ def ablation_on_bias():
             trainer.save(epoch + 1)
             trainer.score()
 
-def default_model_train():
-    configs = [
-        "../../config/CGEDN/CGEDN-AIDS_small-real_real.ini",
-        "../../config/CGEDN/CGEDN-AIDS_700-real_real.ini",
-        "../../config/CGEDN/CGEDN-Linux-real_real.ini",
-        "../../config/CGEDN/CGEDN-IMDB_small-real_real.ini"
-    ]
-
-    for cfg in configs:
-        parser = get_parser()
-        args = parser.parse_args()
-        args.__setattr__("config", cfg) 
-        config = parse_config_file(args.config)
-        update_args_with_config(args, config)
-        tab_printer(args)
-
-        trainer = Trainer(args)
-
-        for epoch in range(args.epoch_start, args.epoch_end):
-            trainer.fit()
-            trainer.save(epoch + 1)
-            trainer.score()
-
-
-
 def best_k_evaluation():
     configs = [
         "../../config/CGEDN/CGEDN-AIDS_small-real_real.ini",
@@ -162,7 +137,6 @@ def best_k_evaluation():
     
 
 if __name__ == "__main__":
-    # ablation_on_bias()
+    ablation_on_bias()
     # ablation_on_multi_view_matching()
     # ablation_on_inter_gconv()
-    default_model_train()

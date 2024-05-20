@@ -15,7 +15,7 @@ from experiments.ablation.model.CGEDN_no_bias import CGEDN_no_bias
 from experiments.ablation.model.CGEDN_no_InterGConv import CGEDN_no_InterGConv
 from experiments.ablation.model.CGEDN_no_MultiViewMatching import CGEDN_no_MultiViewMatching
 from utils.Dataset import Dataset
-from utils.kbest_matching_with_lb import KBestMSolver
+from utils.KBestResolver_CGEDN import KBestMSolver_CGEDN
 
 
 class Trainer(object):
@@ -417,7 +417,7 @@ class Trainer(object):
         g1.edata["f"] = graph_pair["edge_attr1"]
         g2.edata["f"] = graph_pair["edge_attr2"]
 
-        solver = KBestMSolver(pre_mapping, g1, g2)
+        solver = KBestMSolver_CGEDN(pre_mapping, g1, g2)
         solver.get_matching(best_k)
         min_res = solver.min_ged
         best_matching = solver.best_matching()

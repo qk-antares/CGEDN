@@ -18,7 +18,7 @@ from experiments.compare.model.tagsim.TaGSim import TaGSim
 from experiments.compare.model.tagsim.TaGSim_EdgeLabel import TaGSim_EdgeLabel
 from experiments.compare.model.tagsim.TaGSim_NodeUnlabel import TaGSim_NodeUnlabel
 from utils.Dataset import Dataset
-from utils.kbest_matching_with_lb import KBestMSolver
+from utils.KBestResolver_CGEDN import KBestMSolver_CGEDN
 
 
 class Trainer(object):
@@ -353,6 +353,11 @@ class Trainer(object):
         pk10 = []
         pk20 = []
 
+        if self.args.model_name == 'CGEDN':
+            best_k_algo = self.best_k_CGEDN
+        elif self.args.model_name == 'GEDGNN':
+            best_k_algo = self.best_k_GEDGNN 
+
         for query in tqdm(testing_queries, file=sys.stdout):
             t1 = time.time()
             num += len(query)
@@ -362,7 +367,7 @@ class Trainer(object):
             for graph_pair in query:
                 target_ged = graph_pair["target_ged"]
 
-                pre_ged, _ = self.best_k(graph_pair=graph_pair, best_k=best_k)
+                pre_ged, _ = best_k_algo(graph_pair=graph_pair, best_k=best_k)
 
                 pre.append(pre_ged)
                 target.append(target_ged)
@@ -434,7 +439,7 @@ class Trainer(object):
 
         self.append_result_to_file("Testing Matching", table)
 
-    def best_k(self, graph_pair, best_k):
+    def best_k_CGEDN(self, graph_pair, best_k):
         _, _, pre_mapping = self.model(graph_pair)
         pre_mapping = (pre_mapping * 1e4).round().to(torch.int)
 
@@ -448,11 +453,14 @@ class Trainer(object):
         g1.edata["f"] = graph_pair["edge_attr1"]
         g2.edata["f"] = graph_pair["edge_attr2"]
 
-        solver = KBestMSolver(pre_mapping, g1, g2)
+        solver = KBestMSolver_CGEDN(pre_mapping, g1, g2)
         solver.get_matching(best_k)
         min_res = solver.min_ged
         best_matching = solver.best_matching()
         return min_res, best_matching
+
+    def best_k_GEDGNN(self, graph_pair, best_k):
+        return null
 
     @staticmethod
     def cal_pk(num, pre, gt):

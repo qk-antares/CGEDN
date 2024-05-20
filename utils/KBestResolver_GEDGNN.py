@@ -1,4 +1,3 @@
-import copy
 import networkx as nx
 from networkx.algorithms import bipartite, shortest_paths
 import torch
@@ -13,46 +12,19 @@ class GedLowerBound(object):
         self.n1 = g1.num_nodes()
         self.n2 = g2.num_nodes()
         assert self.n1 <= self.n2
-        # node with label
-        if g1.ndata["f"].shape[1] == 1:
+        if g1.ndata['f'].shape[1] == 1:
             self.has_node_label = False
         else:
             self.has_node_label = True
-        # edge with label
-        if g1.edata["f"].shape[1] == 1:
-            self.has_edge_label = False
-        else:
-            self.has_edge_label = True
 
-    def mc(self, sg1, sg2):
-        """
-        calculate the ged between two aligned graphs
-        """
-        nr = eid = er = 0
-        # calculate edge insert or delete
+    @staticmethod
+    def mc(sg1, sg2):
+        # calculate the ged between two aligned graphs
         A = (sg1.adj() - sg2.adj()).coalesce().values()
-        eid = (A**2).sum().item()
-        
-        # calculate edge relabel
-        if self.has_edge_label:
-            src_idx1, dst_idx1 = sg1.edges()
-            edges1 = [(src_idx1[i].item(), dst_idx1[i].item()) for i in range(len(src_idx1))]
-            src_idx2, dst_idx2 = sg2.edges()
-            edges2 = [(src_idx2[i].item(), dst_idx2[i].item()) for i in range(len(src_idx2))]
-            edges2_map = {edge2: eid2 for eid2, edge2 in enumerate(edges2)}
-            eid1s = []
-            eid2s = []
-            for eid1, edge1 in enumerate(edges1):
-                if edge1 in edges2_map:
-                    eid1s.append(eid1)
-                    eid2s.append(edges2_map[edge1])
-            er = ((sg1.edata["f"][eid1s] - sg2.edata["f"][eid2s]) ** 2).sum().item() / 2
-
-        # calculate node relabel
-        if self.has_node_label:
-            F = sg1.ndata["f"] - sg2.ndata["f"]
-            nr = (F**2).sum().item()
-        return (nr + er + eid) / 2.0
+        A_ged = (A ** 2).sum().item()
+        F = sg1.ndata['f'] - sg2.ndata['f']
+        F_ged = (F ** 2).sum().item()
+        return (A_ged + F_ged) / 2.0
 
     def label_set(self, left_nodes, right_nodes):
         # sp.second_matching may be None.
@@ -69,34 +41,23 @@ class GedLowerBound(object):
 
         sub_g1 = self.g1.subgraph(left_nodes)
         sub_g2 = self.g2.subgraph(right_nodes)
-        # 已经匹配部分的代价
         lb = self.mc(sub_g1, sub_g2)
+        # print(lb)
 
-        # 待匹配的边
-        if not self.has_edge_label or (partial_n == self.n1):  # this is a full mapping
-            m1 = self.g1.num_edges() - sub_g1.num_edges()
-            m2 = self.g2.num_edges() - sub_g2.num_edges()
-            lb += abs(m1 - m2) / 2.0
-        else:
-            pending_g1_edges = self.g1.edata["f"].sum(dim=0) - sub_g1.edata["f"].sum(dim=0)
-            pending_g2_edges = self.g2.edata["f"].sum(dim=0) - sub_g2.edata["f"].sum(dim=0)
-            intersect = torch.min(pending_g1_edges, pending_g2_edges)
-            lb += (
-                max(pending_g1_edges.sum().item(), pending_g2_edges.sum().item())
-                - intersect.sum().item()
-            ) / 2
+        # num of edges
+        m1 = self.g1.num_edges() - self.n1 - sub_g1.num_edges()  # + len(left_nodes)
+        m2 = self.g2.num_edges() - self.n2 - sub_g2.num_edges()  # + len(right_nodes)
+        lb += abs(m1 - m2) / 2.0
+        # print(lb)
 
-        # 待匹配的节点
-        if not self.has_node_label or partial_n == self.n1:  # this is a full mapping
-            lb += self.n2 - self.n1
+        # node label
+        if (not self.has_node_label) or (partial_n == self.n1):  # this is a full mapping
+            lb += (self.n2 - self.n1)
         else:
-            pending_u = dgl.remove_nodes(self.g1, left_nodes).ndata["f"].sum(dim=0)
-            pending_v = dgl.remove_nodes(self.g2, right_nodes).ndata["f"].sum(dim=0)
-            intersect = torch.min(pending_u, pending_v)
-            lb += (
-                max(pending_u.sum().item(), pending_v.sum().item())
-                - intersect.sum().item()
-            )
+            f1 = dgl.remove_nodes(self.g1, left_nodes).ndata['f'].sum(dim=0)
+            f2 = dgl.remove_nodes(self.g2, right_nodes).ndata['f'].sum(dim=0)
+            intersect = torch.min(f1, f2)
+            lb += (max(f1.sum().item(), f2.sum().item()) - intersect.sum().item())
 
         return lb
 
@@ -123,12 +84,8 @@ class Subspace(object):
         self.G = G
         self.best_matching = matching
         self.best_res = res
-        self.I = (
-            set() if I is None else I
-        )  # the set of nodes whose matching can't change: use (u, v) -> add u into I
-        self.O = (
-            [] if O is None else O
-        )  # the list of edges we can not use: do not use (u, v) -> append (u, v) into O
+        self.I = set() if I is None else I  # the set of nodes whose matching can't change: use (u, v) -> add u into I
+        self.O = [] if O is None else O  # the list of edges we can not use: do not use (u, v) -> append (u, v) into O
         self.get_second_matching()
         self.lb = None  # the lower bound ged of this subspace (depends on I)
         self.ged = None  # the ged of best matching
@@ -164,7 +121,7 @@ class Subspace(object):
         n = G.number_of_nodes()
         n2 = n - n1
 
-        for u, v in self.O:
+        for (u, v) in self.O:
             G[u][v]["weight"] = float("inf")
 
         matched = [False] * n2
@@ -200,7 +157,6 @@ class Subspace(object):
             v = matching[u] + n1
             res = dis[u][v] + G[v][u]["weight"]
             if res < cycle_min_weight:
-                # if 1e6 < res < cycle_min_weight:
                 cycle_min_weight = res
                 cycle_min_uv = (u, v)
 
@@ -212,18 +168,13 @@ class Subspace(object):
             return
 
         u, v = cycle_min_uv
-        length, path = shortest_paths.weighted.single_source_bellman_ford(
-            G, source=u, target=v
-        )
+        length, path = shortest_paths.weighted.single_source_bellman_ford(G, source=u, target=v)
         assert abs(length + G[v][u]["weight"] - cycle_min_weight) < 1e-12
 
         # print("best matching:", matching)
         # print(cycle_min_weight, path)
 
-        self.branch_edge = (
-            u,
-            v,
-        )  # an edge in the best matching but not in the second best one
+        self.branch_edge = (u, v)  # an edge in the best matching but not in the second best one
         for i in range(0, len(path), 2):
             u, v = path[i], path[i + 1] - n1
             if u != n:
@@ -260,7 +211,7 @@ class Subspace(object):
         return sp_new
 
 
-class KBestMSolver(object):
+class KBestMSolver_GEDGNN(object):
     """
     Maintain a sequence of disjoint subspaces whose union is the full space.
     The best matching of the i-th subspace is exactly the i-th best matching of the full space.
@@ -299,7 +250,7 @@ class KBestMSolver(object):
         if ged < self.min_ged:
             self.min_ged = ged
 
-    """ actually not useful
+    ''' actually not useful
     def cal_min_lb(self):
     lb = float('inf')
     for sp in self.subspaces:
@@ -309,7 +260,7 @@ class KBestMSolver(object):
         else:
             lb = min(lb, sp.lb)
     return lb
-    """
+    '''
 
     @staticmethod
     def from_tensor_to_nx(A):
@@ -345,12 +296,12 @@ class KBestMSolver(object):
             v = matching[u]
             res += A[u][v]
 
-        """
+        '''
         for u in top_nodes:
             for v in bottom_nodes:
                 G[u][v]['weight'] *= -1
         # restore weight to be positive
-        """
+        '''
 
         return G, matching, res
 
@@ -363,13 +314,8 @@ class KBestMSolver(object):
         max_spid = None
 
         for spid, sp in enumerate(self.subspaces):
-            if (
-                sp.lb < self.min_ged
-                and sp.second_res is not None
-                and sp.second_res > max_res
-            ):
-                # if sp.second_res is not None and sp.second_res > max_res:
-                # if (self.pre_ged is not None) and (sp.lb < self.pre_ged):
+            if sp.lb < self.min_ged and sp.second_res is not None and sp.second_res > max_res:
+                #if (self.pre_ged is not None) and (sp.lb < self.pre_ged):
                 max_res = sp.second_res
                 max_spid = spid
 
@@ -397,26 +343,9 @@ class KBestMSolver(object):
     def get_matching(self, k):  # k starts form 1
         while self.k < k and self.expandable:
             self.expand_subspaces()
-            # sp = self.subspaces[self.k - 1]
-            # print(self.k, sp.best_res, sp.second_res, sp.ged, sp.ged2)
-            # print(sp.best_matching[:10])
-            # print(sp.second_matching[:10])
+
         if self.k < k:
             return None, None, None
         else:
-            """
-            for i in range(k):
-                sp = self.subspaces[i]
-                print(sp.best_res, sp.ged, sp.ged2)
-            """
-            sp = self.subspaces[k - 1]
+            sp = self.subspaces[k-1]
             return sp.best_matching, sp.best_res, sp.ged
-
-    def best_matching(self):
-        for sp in self.subspaces:
-            if sp.ged == self.min_ged:
-                return sp.best_matching
-            elif sp.ged2 == self.min_ged:
-                return sp.second_matching
-        print("GED Error: no sp's ged or ged2 = self.min_ged")
-        return None
