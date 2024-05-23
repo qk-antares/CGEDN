@@ -460,7 +460,7 @@ class Trainer(object):
         return min_res, best_matching
 
     def best_k_GEDGNN(self, graph_pair, best_k):
-        return null
+        return None
 
     @staticmethod
     def cal_pk(num, pre, gt):

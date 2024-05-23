@@ -94,16 +94,10 @@ class CGEDN_no_InterGConv(nn.Module):
         mapping_matrix = self.mapping_matrix(embs1, embs2)
         mapping_matrix = F.softmax(mapping_matrix, dim=1)
         cost_matrix = self.cost_matrix(embs1, embs2)
+        cost_matrix = F.relu(cost_matrix)
 
         soft_matrix = mapping_matrix * cost_matrix
-        bias_value = self.get_bias_value(embs1[-1], embs2[-1])
-        score = torch.sigmoid(soft_matrix.sum() + bias_value)
 
-        if self.args.target_mode == "exp":
-            pre_ged = -torch.log(score) * data["avg_v"]
-        elif self.args.target_mode == "linear":
-            pre_ged = score * data["hb"]
-        else:
-            assert False
-
-        return score, pre_ged.item(), mapping_matrix
+        pre_ged = soft_matrix.sum().unsqueeze(dim=0)
+        pre_sim = torch.exp(-pre_ged / data["avg_v"])
+        return pre_sim, pre_ged.item(), mapping_matrix

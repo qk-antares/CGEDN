@@ -63,7 +63,7 @@ def CGEDN_train():
         # "../../config/CGEDN/CGEDN-IMDB_small-real_real.ini",
         # "../../config/CGEDN/CGEDN-AIDS_large-syn_syn.ini",
         # "../../config/CGEDN/CGEDN-AIDS_small-real_real.ini",
-        "../../config/CGEDN/CGEDN-AIDS_700-real_real.ini",
+        # "../../config/CGEDN/CGEDN-AIDS_700-real_real.ini",
         "../../config/CGEDN/CGEDN-Linux-real_real.ini",
     ]
 
@@ -157,9 +157,34 @@ def SimGNN_train():
             trainer.save(epoch + 1)
             trainer.score()
 
+def best_k_evaluation():
+    configs = [
+        # ("../../config/CGEDN/CGEDN-IMDB_large-syn_syn.ini", [19, 20]),
+        ("../../config/CGEDN/CGEDN-IMDB_small-real_real.ini", [17, 18, 19, 20]),
+        # ("../../config/CGEDN/CGEDN-AIDS_large-syn_syn.ini", [17, 18, 19, 20]),
+        ("../../config/CGEDN/CGEDN-AIDS_small-real_real.ini", [17, 18, 19, 20]),
+        ("../../config/CGEDN/CGEDN-AIDS_700-real_real.ini", [17, 18, 19, 20]),
+        ("../../config/CGEDN/CGEDN-Linux-real_real.ini", [17, 18, 19, 20])
+    ]
+
+    for cfg in configs:
+        parser = get_parser()
+        args = parser.parse_args()
+        args.__setattr__("config", cfg[0]) 
+        config = parse_config_file(args.config)
+        update_args_with_config(args, config)
+        tab_printer(args)
+
+        trainer = Trainer(args)
+
+        for epoch in cfg[1]:
+            trainer.load(epoch)
+            trainer.score_best_k(best_k=100)
+        
 
 if __name__ == "__main__":
-    CGEDN_train()
-    # SimGNN_train()
+    # CGEDN_train()
+    best_k_evaluation()
+    SimGNN_train()
+    GEDGNN_train()
     # TaGSim_train()
-    # GEDGNN_train()

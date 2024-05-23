@@ -10,7 +10,6 @@ import torch.nn.functional as F
 from scipy.stats import spearmanr, kendalltau
 from texttable import Texttable
 from tqdm import tqdm
-from experiments.ablation.model.CGEDN import CGEDN
 from experiments.ablation.model.CGEDN_no_bias import CGEDN_no_bias
 from experiments.ablation.model.CGEDN_no_InterGConv import CGEDN_no_InterGConv
 from experiments.ablation.model.CGEDN_no_MultiViewMatching import CGEDN_no_MultiViewMatching
@@ -47,9 +46,7 @@ class Trainer(object):
         args = self.args
         node_dim = self.dataset.node_dim
         edge_dim = self.dataset.edge_dim
-        if self.args.model_name == "CGEDN":
-            self.model = CGEDN(args, node_dim, edge_dim).to(self.device)
-        elif self.args.model_name == "CGEDN_no_InterGConv":
+        if self.args.model_name == "CGEDN_no_InterGConv":
             self.model = CGEDN_no_InterGConv(args, node_dim, edge_dim).to(self.device)
         elif self.args.model_name == "CGEDN_no_MultiViewMatching":
             self.model = CGEDN_no_MultiViewMatching(args, node_dim, edge_dim).to(self.device)
