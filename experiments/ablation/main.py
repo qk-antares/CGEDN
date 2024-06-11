@@ -43,9 +43,9 @@ def main():
 
 def ablation_on_inter_gconv():
     configs = [
-        "../../config/CGEDN/CGEDN_no_InterGConv-AIDS_small-real_real.ini",
-        "../../config/CGEDN/CGEDN_no_InterGConv-AIDS_700-real_real.ini",
-        "../../config/CGEDN/CGEDN_no_InterGConv-Linux-real_real.ini",
+        # "../../config/CGEDN/CGEDN_no_InterGConv-AIDS_small-real_real.ini",
+        # "../../config/CGEDN/CGEDN_no_InterGConv-AIDS_700-real_real.ini",
+        # "../../config/CGEDN/CGEDN_no_InterGConv-Linux-real_real.ini",
         "../../config/CGEDN/CGEDN_no_InterGConv-IMDB_small-real_real.ini"
     ]
 
@@ -58,6 +58,9 @@ def ablation_on_inter_gconv():
         tab_printer(args)
 
         trainer = Trainer(args)
+        
+        if args.epoch_start > 0:
+            trainer.load(args.epoch_start)
 
         for epoch in range(args.epoch_start, args.epoch_end):
             trainer.fit()
@@ -68,7 +71,7 @@ def ablation_on_multi_view_matching():
     configs = [
         # "../../config/CGEDN/CGEDN_no_MultiViewMatching-AIDS_small-real_real.ini",
         # "../../config/CGEDN/CGEDN_no_MultiViewMatching-AIDS_700-real_real.ini",
-        # "../../config/CGEDN/CGEDN_no_MultiViewMatching-Linux-real_real.ini",
+        "../../config/CGEDN/CGEDN_no_MultiViewMatching-Linux-real_real.ini",
         "../../config/CGEDN/CGEDN_no_MultiViewMatching-IMDB_small-real_real.ini"
     ]
 
@@ -82,6 +85,9 @@ def ablation_on_multi_view_matching():
 
         trainer = Trainer(args)
 
+        if args.epoch_start > 0:
+            trainer.load(args.epoch_start)
+
         for epoch in range(args.epoch_start, args.epoch_end):
             trainer.fit()
             trainer.save(epoch + 1)
@@ -89,9 +95,9 @@ def ablation_on_multi_view_matching():
 
 def ablation_on_bias():
     configs = [
-        "../../config/CGEDN/CGEDN_no_bias-AIDS_small-real_real.ini",
-        "../../config/CGEDN/CGEDN_no_bias-AIDS_700-real_real.ini",
-        "../../config/CGEDN/CGEDN_no_bias-Linux-real_real.ini",
+        # "../../config/CGEDN/CGEDN_no_bias-AIDS_small-real_real.ini",
+        # "../../config/CGEDN/CGEDN_no_bias-AIDS_700-real_real.ini",
+        # "../../config/CGEDN/CGEDN_no_bias-Linux-real_real.ini",
         "../../config/CGEDN/CGEDN_no_bias-IMDB_small-real_real.ini"
     ]
 
@@ -104,6 +110,9 @@ def ablation_on_bias():
         tab_printer(args)
 
         trainer = Trainer(args)
+
+        if args.epoch_start > 0:
+            trainer.load(args.epoch_start)
 
         for epoch in range(args.epoch_start, args.epoch_end):
             trainer.fit()
