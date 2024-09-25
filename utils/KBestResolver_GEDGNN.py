@@ -45,8 +45,10 @@ class GedLowerBound(object):
         # print(lb)
 
         # num of edges
-        m1 = self.g1.num_edges() - self.n1 - sub_g1.num_edges()  # + len(left_nodes)
-        m2 = self.g2.num_edges() - self.n2 - sub_g2.num_edges()  # + len(right_nodes)
+        m1 = self.g1.num_edges() - sub_g1.num_edges()
+        m2 = self.g2.num_edges() - sub_g2.num_edges()
+        # m1 = self.g1.num_edges() - self.n1 - sub_g1.num_edges()
+        # m2 = self.g2.num_edges() - self.n2 - sub_g2.num_edges()
         lb += abs(m1 - m2) / 2.0
         # print(lb)
 
@@ -157,6 +159,7 @@ class Subspace(object):
             v = matching[u] + n1
             res = dis[u][v] + G[v][u]["weight"]
             if res < cycle_min_weight:
+            # if 1e6 < res < cycle_min_weight:
                 cycle_min_weight = res
                 cycle_min_uv = (u, v)
 
@@ -315,6 +318,7 @@ class KBestMSolver_GEDGNN(object):
 
         for spid, sp in enumerate(self.subspaces):
             if sp.lb < self.min_ged and sp.second_res is not None and sp.second_res > max_res:
+            # if sp.second_res is not None and sp.second_res > max_res:
                 #if (self.pre_ged is not None) and (sp.lb < self.pre_ged):
                 max_res = sp.second_res
                 max_spid = spid
@@ -343,9 +347,29 @@ class KBestMSolver_GEDGNN(object):
     def get_matching(self, k):  # k starts form 1
         while self.k < k and self.expandable:
             self.expand_subspaces()
+            # sp = self.subspaces[self.k - 1]
+            # print(self.k, sp.best_res, sp.second_res, sp.ged, sp.ged2)
+            # print(sp.best_matching[:10])
+            # print(sp.second_matching[:10])
+
 
         if self.k < k:
             return None, None, None
         else:
+            """
+            for i in range(k):
+                sp = self.subspaces[i]
+                print(sp.best_res, sp.ged, sp.ged2)
+            """
             sp = self.subspaces[k-1]
             return sp.best_matching, sp.best_res, sp.ged
+
+    def best_matching(self):
+        for sp in self.subspaces:
+            if sp.ged == self.min_ged:
+                return sp.best_matching
+            elif sp.ged2 == self.min_ged:
+                return sp.second_matching
+        print("GED Error: no sp's ged or ged2 = self.min_ged")
+        return None
+

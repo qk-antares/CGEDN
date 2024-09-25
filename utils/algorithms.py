@@ -47,3 +47,18 @@ def DF_GED(graph1, graph2):
         g1, g2, node_match=lambda x, y: x["label"] == y["label"], edge_match=lambda x, y: x["label"] == y["label"],
     )
     return paths, ged
+
+# graph1 = {"n":4,"m":3,"nodes":["C","N","C","S"],"edges":[[0,1],[0,2],[0,3]],"edge_labels":["1","1","2"]}
+# graph2 = {"n":5,"m":5,"nodes":["N","C","S","C","N"],"edges":[[0,1],[1,2],[1,3],[1,4],[3,4]],"edge_labels":["1","1","1","1","1"]}
+graph1 = {"n":4,"m":4,"nodes":["C","N","C","S"],"edges":[[0,1],[0,2],[1,3],[2,3]],"edge_labels":["1","1","1","1"]}
+graph2 = {"n":5,"m":5,"nodes":["C","N","S","C","N"],"edges":[[0,1],[0,2],[1,3],[2,3],[3,4]],"edge_labels":["1","1","1","1","1"]}
+
+ans = DF_GED(graph1, graph2)
+print(ans)
+
+# [(0, 1), (1, 0), (2, 3), (3, 2)]
+# [(0, 1), (1, 4), (2, 3), (3, 2)]
+# (0, 0), (1, 1), (3, 3), (2, 2), (None, 4)
+# (2, 0), (1, 3), (0, 1), (3, 2), (None, 4)
+# (1, 0), (2, 3), (0, 1), (3, 2), (None, 4)
+# (3, 0), (0, 3), (1, 1), (2, 2), (None, 4)

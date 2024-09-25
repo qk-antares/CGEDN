@@ -1,7 +1,7 @@
 import json
 import time
 import torch
-from experiments.model.cgedn.CGEDN import CGEDN
+from experiments.compare.model.cgedn.CGEDN import CGEDN
 from utils.KBestResolver_CGEDN import KBestMSolver_CGEDN
 from utils.parameter_parser import get_parser
 import dgl
@@ -67,12 +67,13 @@ args = parser.parse_args()
 
 args.__setattr__("model_name", "CGEDN")
 args.__setattr__("gnn_filters", "64-64-64")
+args.__setattr__("dataset", "AIDS_small")
 args.__setattr__("tensor_neurons", 64)
 args.__setattr__("device", device)
 
 model = CGEDN(args, node_dim, edge_dim).to(device)
 model.load_state_dict(
-    torch.load("../experiments/model_save/CGEDN/AIDS_small/models_dir/17")
+    torch.load("../experiments/compare/model_save/CGEDN/AIDS_small-real_real/models_dir/19")
 )
 
 model.eval()
@@ -80,8 +81,11 @@ model.eval()
 # graph1 = {"n": 2, "m": 1, "nodes": ["C", "C"], "edges": [[1, 0]], "edge_labels": ["2"]}
 # graph2 = {"n": 3, "m": 2, "nodes": ["C", "O", "C"], "edges": [[0, 1], [1, 2]], "edge_labels": ["1", "1"]}
 
-graph1 = {"n":6,"m":6,"nodes":["N","C","N","S","N","C"],"edges":[[0,1],[1,2],[1,3],[2,4],[3,5],[4,5]],"edge_labels":["2","1","1","1","1","2"]}
-graph2 = {"n":7,"m":7,"nodes":["S","C","S","N","C","N","S"],"edges":[[0,1],[1,2],[1,3],[2,4],[3,5],[4,6],[4,5]],"edge_labels":["2","1","1","1","1","2","1"]}
+# graph1 = {"n":6,"m":6,"nodes":["N","C","N","S","N","C"],"edges":[[0,1],[1,2],[1,3],[2,4],[3,5],[4,5]],"edge_labels":["2","1","1","1","1","2"]}
+# graph2 = {"n":7,"m":7,"nodes":["S","C","S","N","C","N","S"],"edges":[[0,1],[1,2],[1,3],[2,4],[3,5],[4,6],[4,5]],"edge_labels":["2","1","1","1","1","2","1"]}
+
+graph1 = {"n":4,"m":4,"nodes":["C","N","C","S"],"edges":[[0,1],[0,2],[1,3],[2,3]],"edge_labels":["1","1","1","1"]}
+graph2 = {"n":5,"m":5,"nodes":["C","N","S","C","N"],"edges":[[0,1],[0,2],[1,3],[2,3],[3,4]],"edge_labels":["1","1","1","1","1"]}
 
 graph_pair = pack_graph_pair(g1=graph1, g2=graph2)
 out = model(graph_pair)
@@ -117,3 +121,14 @@ best_matching = solver.best_matching()
 t2 = time.time()
 
 print(min_res, best_matching, t2-t1)
+
+# import matplotlib.pyplot as plt
+# # 创建热力图
+# plt.imshow(tensor.detach().numpy(), cmap='Blues', interpolation='nearest')
+# plt.colorbar()  # 显示颜色条
+
+# # 保存热力图为图片文件
+# plt.savefig('heatmap.png')
+
+# # 显示热力图
+# plt.show()

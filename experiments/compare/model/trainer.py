@@ -19,6 +19,7 @@ from experiments.compare.model.tagsim.TaGSim_EdgeLabel import TaGSim_EdgeLabel
 from experiments.compare.model.tagsim.TaGSim_NodeUnlabel import TaGSim_NodeUnlabel
 from utils.Dataset import Dataset
 from utils.KBestResolver_CGEDN import KBestMSolver_CGEDN
+from utils.KBestResolver_GEDGNN import KBestMSolver_GEDGNN
 
 
 class Trainer(object):
@@ -389,6 +390,8 @@ class Trainer(object):
             pk10.append(self.cal_pk(10, pre, target))
             pk20.append(self.cal_pk(20, pre, target))
 
+            print(f"MSE: {round(np.mean(ged_mses), 3)}, MAE: {round(np.mean(ged_maes), 3)}, ACC: {round(num_acc / num, 3)}, fea: {round(num_fea / num, 3)}, rho: {round(float(np.mean(rho)), 3)}, tau: {round(float(np.mean(tau)), 3)}, pk10: {round(float(np.mean(pk10)), 3)}, pk20: {round(float(np.mean(pk20)), 3)}")
+
         time_usage = round(float(np.mean(time_usage)), 3)
         ged_mse = round(np.mean(ged_mses), 3)
         ged_mae = round(np.mean(ged_maes), 3)
@@ -460,7 +463,24 @@ class Trainer(object):
         return min_res, best_matching
 
     def best_k_GEDGNN(self, graph_pair, best_k):
-        return None
+        _, _, pre_mapping = self.model(graph_pair)
+        m = torch.nn.Softmax(dim=1)
+        pre_mapping = (m(pre_mapping) * 1e4).round().to(torch.int)
+
+        edge_index1 = graph_pair["edge_index1"]
+        edge_index2 = graph_pair["edge_index2"]
+        n1, n2 = pre_mapping.shape
+
+        g1 = dgl.graph((edge_index1[0], edge_index1[1]), num_nodes=n1)
+        g2 = dgl.graph((edge_index2[0], edge_index2[1]), num_nodes=n2)
+        g1.ndata['f'] = graph_pair["emb1"]
+        g2.ndata['f'] = graph_pair["emb2"]
+        
+        solver = KBestMSolver_GEDGNN(pre_mapping, g1, g2)
+        solver.get_matching(best_k)
+        min_res = solver.min_ged
+        best_matching = solver.best_matching()
+        return min_res, best_matching
 
     @staticmethod
     def cal_pk(num, pre, gt):

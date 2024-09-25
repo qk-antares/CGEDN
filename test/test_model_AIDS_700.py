@@ -1,7 +1,7 @@
 import json
 import time
 import torch
-from experiments.model.cgedn.CGEDN import CGEDN
+from experiments.compare.model.cgedn.CGEDN import CGEDN
 from utils.KBestResolver_CGEDN import KBestMSolver_CGEDN
 from utils.parameter_parser import get_parser
 import dgl
