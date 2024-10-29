@@ -4,9 +4,9 @@
 
 Graph Edit Distance (GED) is a classical graph similarity metric. Since exact GED computation is NP-hard, existing GNN-based methods try to approximate GED in polynomial time. **However, they still lack support for edge labels or the ability to generate an edit path.** To address these limitations, we propose a hybrid method named CGEDN based on Graph Neural Networks and learnable node matching. Specifically, CGEDN starts with cross-graph feature aggregation layers, which generate node embeddings with fine-grained interaction features and support edge labels as well. Next, two node matching pipelines are applied to obtain a node matching confidence matrix and a cost matrix, where the confidence matrix is supervised by optimal node matchings corresponding to GED. Finally, we calculate the weighted sum of the cost matrix with a bias value to regress GED only, or search for the top-k most promising node matchings based on confidence matrix to approximate GED and recover an edit path simultaneously. The experimental results on real and synthetic graphs demonstrate that CGEDN significantly outperforms the best result of existing approximate methods.
 
-<img src="https://img.fffu.fun/image-bed/2024/10/29/image-20241029104705030.png" alt="image-20241029104705030" style="zoom: 33%;"/>
+<img src="https://s2.loli.net/2024/10/29/cna1u8twkQDOYLE.png" alt="image-20241029104705030" style="zoom: 33%;"/>
 
-![image-20241029105250263](https://img.fffu.fun/image-bed/2024/10/29/image-20241029105250263.png)
+![image-20241029105250263](https://s2.loli.net/2024/10/29/ikweJpBPF7vbImn.png)
 
 ### 2. How to run the code
 
@@ -96,7 +96,7 @@ Each dataset has 1 subfolder and 3 files. Subfolder `/data/json` can be divided 
 {"n":10,"m":9,"nodes":["C","C","S","S","O","O","O","O","O","O"],"edges":[[0,1],[0,2],[1,3],[2,4],[2,5],[2,6],[3,7],[3,8],[3,9]],"edge_labels":["1","1","1","2","2","1","2","2","1"]}
 ```
 
-<img src="https://img.fffu.fun/image-bed/2024/10/29/4.png" alt="4" style="zoom: 67%;" />
+<img src="https://s2.loli.net/2024/10/29/TuF12GlyWkawrZK.png" alt="4" style="zoom: 67%;" />
 
 The `properties.json` file contains some metadata of the dataset, such as node labels set, edge labels set, maximum number of nodes, etc.
 
