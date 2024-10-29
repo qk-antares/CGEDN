@@ -4,11 +4,11 @@ from utils.parameter_parser import *
 
 def CGEDN_train():
     configs = [
+        "../../config/CGEDN/CGEDN-AIDS_700-real_real.ini",
         # "../../config/CGEDN/CGEDN-IMDB_large-syn_syn.ini",
         # "../../config/CGEDN/CGEDN-IMDB_small-real_real.ini",
         # "../../config/CGEDN/CGEDN-AIDS_large-syn_syn.ini",
         # "../../config/CGEDN/CGEDN-AIDS_small-real_real.ini",
-        "../../config/CGEDN/CGEDN-AIDS_700-real_real.ini",
         # "../../config/CGEDN/CGEDN-Linux-real_real.ini",
     ]
 
